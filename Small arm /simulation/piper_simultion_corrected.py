@@ -156,13 +156,13 @@ class PiperSimulation:
         p.addUserDebugText("Z", [0, 0, axis_length + 0.05], 
                           textColorRGB=[0, 0, 1], textSize=1.5)
     
-    def set_joint_positions(self, joint_angles, max_force=100):
+    def set_joint_positions(self, joint_angles, max_force=500):
         """
         Set joint positions with clamping to limits
         
         Args:
             joint_angles: List of 6 joint angles in radians
-            max_force: Maximum force to apply
+            max_force: Maximum force to apply (default 500 for stiffer control)
         """
         if len(joint_angles) != 6:
             raise ValueError(f"Expected 6 joint angles, got {len(joint_angles)}")
@@ -177,14 +177,16 @@ class PiperSimulation:
             )
             clamped_angles.append(clamped)
         
-        # Set position control
+        # Set position control with higher gain and damping to prevent flopping
         for i, joint_idx in enumerate(self.joint_indices):
             p.setJointMotorControl2(
                 self.robot_id,
                 joint_idx,
                 p.POSITION_CONTROL,
                 targetPosition=clamped_angles[i],
-                force=max_force
+                force=max_force,
+                positionGain=0.3,  # Position gain for stiffer control
+                velocityGain=0.1   # Velocity damping to reduce oscillations
             )
     
     def get_joint_positions(self):

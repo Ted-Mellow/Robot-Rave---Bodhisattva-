@@ -55,12 +55,14 @@ time,joint1,joint2,joint3,joint4,joint5,joint6,description
 **⚠️ IMPORTANT:** Joint angles must be in **radians** (not degrees!)
 
 **Joint Limits (from physical hardware specs):**
-- J1 (base rotation): ±2.688 rad (±154°)
-- J2 (shoulder): 0 → 3.403 rad (0° → 195°)
-- J3 (elbow): -3.054 → 0 rad (-175° → 0°)
-- J4 (wrist roll): ±1.850 rad (±106°)
-- J5 (wrist pitch): ±1.309 rad (±75°)
-- J6 (wrist rotate): ±1.745 rad (±100°)
+| Joint | Position Range (rad) | Position Range (°) | Max Speed (rad/s) | Max Speed (°/s) |
+|-------|---------------------|-------------------|-------------------|-----------------|
+| J1 (base) | ±2.688 | ±154° | 3.142 | 180°/s |
+| J2 (shoulder) | 0 → 3.403 | 0° → 195° | 3.403 | 195°/s |
+| J3 (elbow) | -3.054 → 0 | -175° → 0° | 3.142 | 180°/s |
+| J4 (wrist roll) | ±1.850 | ±106° | 3.927 | 225°/s |
+| J5 (wrist pitch) | ±1.309 | ±75° | 3.927 | 225°/s |
+| J6 (wrist rotate) | ±1.745 | ±100° | 3.927 | 225°/s |
 
 ## 📁 Structure
 ```

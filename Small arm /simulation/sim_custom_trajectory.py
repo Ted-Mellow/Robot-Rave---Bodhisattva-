@@ -11,7 +11,7 @@ from pathlib import Path
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from piper_pybullet_sim import PiperSimulation
+from piper_simultion_corrected import PiperSimulation
 import time
 
 
@@ -83,7 +83,7 @@ def main():
     trajectory = load_csv_trajectory(selected)
     print(f"   {len(trajectory)} waypoints loaded")
     
-    # Run simulation
+    # Run simulation (will auto-detect and load URDF)
     sim = PiperSimulation(gui=True)
     
     try:

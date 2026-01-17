@@ -25,14 +25,14 @@ import pybullet as p
 class CSVTrajectoryRunner:
     """Run robot trajectories from CSV files"""
     
-    def __init__(self, csv_file, gui=True, use_urdf=False):
+    def __init__(self, csv_file, gui=True, use_urdf=True):
         """
         Initialize trajectory runner
         
         Args:
             csv_file (str): Path to CSV trajectory file
             gui (bool): Show PyBullet GUI
-            use_urdf (bool): Load URDF model instead of primitive shapes
+            use_urdf (bool): Load URDF model (default True, uses robot_models/piper.urdf)
         """
         self.csv_file = Path(csv_file)
         self.gui = gui
@@ -50,7 +50,8 @@ class CSVTrajectoryRunner:
         
         # Load URDF if requested
         if use_urdf:
-            urdf_path = Path(__file__).parent / "robot_models" / "piper.urdf"
+            # Look for URDF in parent directory's robot_models folder
+            urdf_path = Path(__file__).parent.parent / "robot_models" / "piper.urdf"
             if urdf_path.exists():
                 print(f"✅ Loading URDF model: {urdf_path}")
                 # Remove the primitive robot
@@ -211,7 +212,7 @@ Examples:
     parser.add_argument('--loop', action='store_true', help='Loop trajectory continuously')
     parser.add_argument('--speed', type=float, default=1.0, help='Speed factor (default: 1.0)')
     parser.add_argument('--no-gui', action='store_true', help='Run without GUI')
-    parser.add_argument('--urdf', action='store_true', help='Use URDF model instead of primitive shapes')
+    parser.add_argument('--no-urdf', dest='urdf', action='store_false', default=True, help='Use primitive shapes instead of URDF model')
     
     args = parser.parse_args()
     

@@ -11,9 +11,10 @@ source venv/bin/activate
 **CSV Trajectories (Recommended):**
 ```bash
 python simulation/run_csv_trajectory.py csv_trajectories/example_wave.csv
-python simulation/run_csv_trajectory.py csv_trajectories/example_dance.csv --urdf
+python simulation/run_csv_trajectory.py csv_trajectories/example_dance.csv --loop
 python simulation/run_csv_trajectory.py csv_trajectories/example_wave.csv --loop --speed 0.5
 ```
+All commands use the full Piper URDF model by default (with gripper).
 
 **Python Simulations:**
 ```bash

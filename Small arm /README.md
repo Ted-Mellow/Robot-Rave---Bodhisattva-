@@ -22,16 +22,6 @@ python piper_pybullet_sim.py
 python simulation_examples/sim_joint_sweep.py
 ```
 
-**Circular Motion** - Smooth coordinated movement:
-```bash
-python simulation_examples/sim_circular_motion.py
-```
-
-**Pick and Place** - Simulated pick-and-place operation:
-```bash
-python simulation_examples/sim_pick_place.py
-```
-
 **Custom Trajectory** - Template for your own motions:
 ```bash
 python simulation_examples/sim_custom_trajectory.py
@@ -124,12 +114,10 @@ Small arm /
 ├── piper_pybullet_sim.py       # Main simulation class
 ├── simulation_examples/         # Example simulations
 │   ├── sim_joint_sweep.py
-│   ├── sim_circular_motion.py
-│   ├── sim_pick_place.py
 │   └── sim_custom_trajectory.py
 ├── piper_sdk/                   # Piper SDK (for real robot)
-├── venv/                        # Python virtual environment
-└── AgileX_Piper_Development_Guide.md
+├── src/                         # Source code modules
+└── venv/                        # Python virtual environment
 ```
 
 ## 🤖 Real Robot Control

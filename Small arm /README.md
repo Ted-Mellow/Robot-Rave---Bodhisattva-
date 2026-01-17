@@ -10,6 +10,22 @@ source venv/bin/activate
 
 ## 🎮 Running Simulations
 
+### CSV Trajectory Runner (Recommended)
+Run pre-defined trajectories from CSV files:
+```bash
+# Basic usage
+python run_csv_trajectory.py csv_trajectories/example_wave.csv
+
+# With URDF model
+python run_csv_trajectory.py csv_trajectories/example_dance.csv --urdf
+
+# Loop continuously
+python run_csv_trajectory.py csv_trajectories/example_wave.csv --loop
+
+# Adjust speed (0.5 = half speed, 2.0 = double speed)
+python run_csv_trajectory.py csv_trajectories/example_dance.csv --speed 0.5
+```
+
 ### Basic Simulation Test
 ```bash
 python piper_pybullet_sim.py
@@ -35,9 +51,24 @@ python simulation_examples/sim_custom_trajectory.py
 
 The simulation will automatically cleanup and disconnect.
 
-## ✏️ Creating Custom Simulations
+## ✏️ Creating Custom Trajectories
 
-### Method 1: Modify Template
+### Method 1: CSV Files (Easiest)
+Create a CSV file in `csv_trajectories/` folder:
+
+```csv
+time,joint1,joint2,joint3,joint4,joint5,joint6,description
+0.0,0.0,0.0,0.0,0.0,0.0,0.0,Start position
+1.0,0.5,1.0,-1.0,0.5,0.5,0.5,Target position
+2.0,0.0,0.0,0.0,0.0,0.0,0.0,Return home
+```
+
+Then run:
+```bash
+python run_csv_trajectory.py csv_trajectories/your_file.csv
+```
+
+### Method 2: Modify Python Template
 Edit `simulation_examples/sim_custom_trajectory.py` and customize the waypoints:
 
 ```python
@@ -48,7 +79,7 @@ my_trajectory = [
 ]
 ```
 
-### Method 2: Create New File
+### Method 3: Create New Python File
 ```python
 #!/usr/bin/env python3
 import sys
@@ -111,8 +142,15 @@ sim.close()                                         # Cleanup and exit
 ```
 Small arm /
 ├── README.md                    # This file
+├── run_csv_trajectory.py        # CSV trajectory runner
 ├── piper_pybullet_sim.py       # Main simulation class
-├── simulation_examples/         # Example simulations
+├── csv_trajectories/            # Place your CSV trajectory files here
+│   ├── example_wave.csv
+│   ├── example_dance.csv
+│   └── README.md
+├── robot_models/                # URDF robot models
+│   └── piper.urdf
+├── simulation_examples/         # Example Python simulations
 │   ├── sim_joint_sweep.py
 │   └── sim_custom_trajectory.py
 ├── piper_sdk/                   # Piper SDK (for real robot)

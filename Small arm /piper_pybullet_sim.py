@@ -223,8 +223,18 @@ class PiperSimulation:
         orientation = link_state[1]
         return position, orientation
     
+    def is_connected(self):
+        """Check if still connected to physics server"""
+        try:
+            p.getConnectionInfo(self.client)
+            return True
+        except:
+            return False
+    
     def step(self):
         """Step the simulation forward"""
+        if not self.is_connected():
+            raise RuntimeError("Physics server disconnected (GUI may have been closed)")
         p.stepSimulation()
         if self.gui:
             time.sleep(self.time_step)
@@ -238,8 +248,11 @@ class PiperSimulation:
     
     def close(self):
         """Close the simulation"""
-        p.disconnect(self.client)
-        print("🔴 Simulation closed")
+        if self.is_connected():
+            p.disconnect(self.client)
+            print("🔴 Simulation closed")
+        else:
+            print("🔴 Simulation already closed")
 
 
 def demo_simple_motion():

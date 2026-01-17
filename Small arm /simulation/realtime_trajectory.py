@@ -53,11 +53,11 @@ def map_pose_to_joints(left_angles):
 
     # Convert to radians and apply to joints
     j1 = 0.0                          # Base rotation - fixed
-    j2 = deg_to_rad(shoulder)         # Shoulder pitch
+    j2 = deg_to_rad(shoulder - 90)    # Shoulder pitch (90° input = horizontal)
     j3 = deg_to_rad(elbow - 180)      # Elbow (inverted, 180° = straight = 0 rad)
     j4 = 0.0                          # Wrist roll - fixed
-    j5 = deg_to_rad(wrist - 180)      # Wrist pitch
-    j6 = 0.0                          # Wrist rotation - fixed
+    j5 = deg_to_rad(0)      # Wrist pitch
+    j6 = deg_to_rad(90)                        # Wrist rotation - fixed
 
     return [j1, j2, j3, j4, j5, j6]
 
@@ -126,8 +126,11 @@ async def websocket_endpoint(websocket: WebSocket):
                     if len(left_angles) == 4:
                         joints = map_pose_to_joints(left_angles)
                         command_queue.put(joints)
-
-                await websocket.send_text("ok")
+                        await websocket.send_text(json.dumps({"joints": joints}))
+                    else:
+                        await websocket.send_text("error: left array must have 4 elements")
+                else:
+                    await websocket.send_text("error: missing 'left' key")
 
             except json.JSONDecodeError:
                 await websocket.send_text("error: invalid JSON")

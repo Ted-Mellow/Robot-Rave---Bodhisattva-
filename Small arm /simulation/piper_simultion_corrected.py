@@ -261,7 +261,45 @@ class PiperSimulation:
         position = link_state[0]
         orientation = link_state[1]
         return position, orientation
-    
+
+    def set_end_effector_position(self, target_pos, target_orn=None):
+        """
+        Move end effector to Cartesian position using inverse kinematics
+
+        Args:
+            target_pos: [x, y, z] target position in meters
+            target_orn: Optional quaternion [x, y, z, w] for orientation.
+                       If None, uses default forward-pointing orientation.
+
+        Returns:
+            List of 6 joint angles (radians) computed by IK
+        """
+        if target_orn is None:
+            # Default orientation: end effector pointing forward along X axis
+            target_orn = p.getQuaternionFromEuler([0, 0, 0])
+
+        ee_link_idx = self.joint_indices[-1]
+
+        # Compute IK with joint limits
+        joint_angles = p.calculateInverseKinematics(
+            self.robot_id,
+            ee_link_idx,
+            target_pos,
+            target_orn,
+            lowerLimits=self.JOINT_LIMITS['lower'],
+            upperLimits=self.JOINT_LIMITS['upper'],
+            jointRanges=[u - l for l, u in zip(self.JOINT_LIMITS['lower'], self.JOINT_LIMITS['upper'])],
+            restPoses=[0.0] * 6,
+            maxNumIterations=100,
+            residualThreshold=1e-5
+        )
+
+        # Apply the computed joint angles
+        joint_list = list(joint_angles[:6])
+        self.set_joint_positions(joint_list)
+
+        return joint_list
+
     def set_gripper(self, opening):
         """
         Set gripper opening

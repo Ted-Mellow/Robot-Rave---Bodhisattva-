@@ -14,10 +14,11 @@ import os
 class PiperSimulation:
     """PyBullet simulation for Piper robot arm with corrected URDF"""
     
-    # Joint limits from piper_sdk
+    # Joint limits from physical robot hardware specs (in radians)
+    # J1: ±154°, J2: 0→195°, J3: -175→0°, J4: ±106°, J5: ±75°, J6: ±100°
     JOINT_LIMITS = {
-        'lower': [-2.6179, 0, -2.967, -1.745, -1.22, -2.09439],
-        'upper': [2.6179, 3.14159, 0, 1.745, 1.22, 2.09439]
+        'lower': [-2.68781, 0, -3.05433, -1.85005, -1.30900, -1.74533],
+        'upper': [2.68781, 3.40339, 0, 1.85005, 1.30900, 1.74533]
     }
     
     JOINT_NAMES = ['joint1', 'joint2', 'joint3', 'joint4', 'joint5', 'joint6']

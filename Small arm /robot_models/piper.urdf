@@ -68,12 +68,13 @@
 
   <!-- Joint 1: Base rotation (Z-axis) -->
   <!-- d1 = 123mm = 0.123m -->
+  <!-- Physical limit: ±154° = ±2.68781 rad -->
   <joint name="joint1" type="revolute">
     <parent link="base_link"/>
     <child link="link1"/>
     <origin xyz="0 0 0.123" rpy="0 0 0"/>
     <axis xyz="0 0 1"/>
-    <limit lower="-2.6179" upper="2.6179" effort="100" velocity="3.927"/>
+    <limit lower="-2.68781" upper="2.68781" effort="100" velocity="3.927"/>
     <dynamics damping="0.7" friction="0.1"/>
   </joint>
 
@@ -105,12 +106,13 @@
 
   <!-- Joint 2: Shoulder pitch (Y-axis) -->
   <!-- alpha1 = -π/2, so coordinate frame rotates -->
+  <!-- Physical limit: 0→195° = 0→3.40339 rad -->
   <joint name="joint2" type="revolute">
     <parent link="link1"/>
     <child link="link2"/>
     <origin xyz="0 0 0" rpy="0 0 0"/>
     <axis xyz="0 1 0"/>
-    <limit lower="0" upper="3.14159" effort="100" velocity="3.927"/>
+    <limit lower="0" upper="3.40339" effort="100" velocity="3.927"/>
     <dynamics damping="0.7" friction="0.1"/>
   </joint>
 
@@ -140,12 +142,13 @@
 
   <!-- Joint 3: Elbow pitch (Y-axis) -->
   <!-- a2 = 285.03mm = 0.28503m -->
+  <!-- Physical limit: -175→0° = -3.05433→0 rad -->
   <joint name="joint3" type="revolute">
     <parent link="link2"/>
     <child link="link3"/>
     <origin xyz="0.28503 0 0" rpy="0 0 0"/>
     <axis xyz="0 1 0"/>
-    <limit lower="-2.967" upper="0" effort="100" velocity="3.927"/>
+    <limit lower="-3.05433" upper="0" effort="100" velocity="3.927"/>
     <dynamics damping="0.5" friction="0.1"/>
   </joint>
 
@@ -175,12 +178,13 @@
 
   <!-- Joint 4: Wrist roll (X-axis) -->
   <!-- d3 = 250.75mm = 0.25075m (but this is offset in Z due to alpha) -->
+  <!-- Physical limit: ±106° = ±1.85005 rad -->
   <joint name="joint4" type="revolute">
     <parent link="link3"/>
     <child link="link4"/>
     <origin xyz="0.25075 0 0" rpy="0 0 0"/>
     <axis xyz="1 0 0"/>
-    <limit lower="-1.745" upper="1.745" effort="50" velocity="3.927"/>
+    <limit lower="-1.85005" upper="1.85005" effort="50" velocity="3.927"/>
     <dynamics damping="0.3" friction="0.05"/>
   </joint>
 
@@ -210,12 +214,13 @@
 
   <!-- Joint 5: Wrist pitch (Y-axis) -->
   <!-- alpha4 = -π/2 rotation -->
+  <!-- Physical limit: ±75° = ±1.30900 rad -->
   <joint name="joint5" type="revolute">
     <parent link="link4"/>
     <child link="link5"/>
     <origin xyz="0 0 0.08" rpy="0 0 0"/>
     <axis xyz="0 1 0"/>
-    <limit lower="-1.22" upper="1.22" effort="50" velocity="3.927"/>
+    <limit lower="-1.30900" upper="1.30900" effort="50" velocity="3.927"/>
     <dynamics damping="0.3" friction="0.05"/>
   </joint>
 
@@ -245,12 +250,13 @@
 
   <!-- Joint 6: Wrist rotation (Z-axis) -->
   <!-- d5 = 91mm = 0.091m -->
+  <!-- Physical limit: ±100° = ±1.74533 rad -->
   <joint name="joint6" type="revolute">
     <parent link="link5"/>
     <child link="link6"/>
     <origin xyz="0 0 0.05" rpy="0 0 0"/>
     <axis xyz="0 0 1"/>
-    <limit lower="-2.09439" upper="2.09439" effort="30" velocity="3.927"/>
+    <limit lower="-1.74533" upper="1.74533" effort="30" velocity="3.927"/>
     <dynamics damping="0.2" friction="0.05"/>
   </joint>
 

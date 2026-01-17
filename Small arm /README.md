@@ -11,6 +11,8 @@ source venv/bin/activate
 **Single command to run any CSV choreography:**
 ```bash
 python simulation/run_csv_trajectory.py csv_trajectories/YOUR_FILE.csv
+python simulation/run_csv_trajectory.py csv_trajectories/example_wave.csv --loop --speed 0.5
+
 ```
 
 **Examples:**
@@ -52,13 +54,13 @@ time,joint1,joint2,joint3,joint4,joint5,joint6,description
 
 **⚠️ IMPORTANT:** Joint angles must be in **radians** (not degrees!)
 
-**Joint Limits (radians):**
-- J1 (base): ±2.62 rad (±150°)
-- J2 (shoulder): 0 → 3.14 rad (0° → 180°)
-- J3 (elbow): -2.97 → 0 rad (-170° → 0°)
-- J4 (wrist roll): ±1.75 rad (±100°)
-- J5 (wrist pitch): ±1.22 rad (±70°)
-- J6 (wrist rotate): ±2.09 rad (±120°)
+**Joint Limits (from physical hardware specs):**
+- J1 (base rotation): ±2.688 rad (±154°)
+- J2 (shoulder): 0 → 3.403 rad (0° → 195°)
+- J3 (elbow): -3.054 → 0 rad (-175° → 0°)
+- J4 (wrist roll): ±1.850 rad (±106°)
+- J5 (wrist pitch): ±1.309 rad (±75°)
+- J6 (wrist rotate): ±1.745 rad (±100°)
 
 ## 📁 Structure
 ```

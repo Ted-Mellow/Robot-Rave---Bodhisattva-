@@ -16,20 +16,29 @@ import time
 
 
 def load_csv_trajectory(csv_file):
-    """Load trajectory from CSV file"""
+    """Load trajectory from CSV file with timing and descriptions"""
     waypoints = []
     
     with open(csv_file, 'r') as f:
         reader = csv.DictReader(f)
         for row in reader:
-            waypoints.append([
-                float(row['joint1']),
-                float(row['joint2']),
-                float(row['joint3']),
-                float(row['joint4']),
-                float(row['joint5']),
-                float(row['joint6'])
-            ])
+            waypoints.append({
+                'time': float(row['time']),
+                'joints': [
+                    float(row['joint1']),
+                    float(row['joint2']),
+                    float(row['joint3']),
+                    float(row['joint4']),
+                    float(row['joint5']),
+                    float(row['joint6'])
+                ],
+                'description': row.get('description', '')
+            })
+    
+    # Validate times are increasing
+    for i in range(1, len(waypoints)):
+        if waypoints[i]['time'] < waypoints[i-1]['time']:
+            print(f"⚠️  Warning: Time decreased at waypoint {i+1}")
     
     return waypoints
 
@@ -82,16 +91,29 @@ def main():
         print("\n🔄 Executing trajectory...")
         time.sleep(0.5)
         
-        # Execute trajectory
-        for i, waypoint in enumerate(trajectory, 1):
-            print(f"   Waypoint {i}/{len(trajectory)}")
-            sim.set_joint_positions(waypoint)
+        # Execute trajectory with proper timing
+        for i in range(len(trajectory)):
+            wp = trajectory[i]
             
-            # Hold position
-            for _ in range(120):
+            # Display description if available
+            if wp['description']:
+                print(f"   {i+1}/{len(trajectory)}: {wp['description']}")
+            else:
+                print(f"   Waypoint {i+1}/{len(trajectory)}")
+            
+            # Calculate time to next waypoint
+            if i < len(trajectory) - 1:
+                time_delta = trajectory[i+1]['time'] - wp['time']
+                steps = max(int(time_delta / sim.time_step), 10)  # At least 10 steps
+            else:
+                steps = 120  # Hold final position
+            
+            # Move to position
+            sim.set_joint_positions(wp['joints'])
+            
+            # Interpolate over time
+            for _ in range(steps):
                 sim.step()
-            
-            time.sleep(0.3)
         
         print("\n✅ Trajectory complete!")
         print("Press Ctrl+C to exit\n")

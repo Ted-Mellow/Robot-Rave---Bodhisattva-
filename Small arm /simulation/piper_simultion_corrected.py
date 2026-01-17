@@ -86,7 +86,13 @@ class PiperSimulation:
         # Add coordinate frame
         self._add_coordinate_frame()
         
-        print(f"✅ Piper simulation initialized")
+        # Additional stabilization: Allow more time for physics to fully settle
+        # This ensures no visible flopping when GUI appears or control begins
+        print("⏳ Stabilizing robot physics...")
+        for _ in range(150):
+            p.stepSimulation()
+        
+        print(f"✅ Piper simulation initialized and stabilized")
         print(f"   Robot ID: {self.robot_id}")
         print(f"   Num joints: {p.getNumJoints(self.robot_id)}")
         print(f"   Controllable joints: {self.joint_indices}")
@@ -133,6 +139,27 @@ class PiperSimulation:
             p.enableJointForceTorqueSensor(self.robot_id, joint_idx, True)
         
         print(f"\n✅ Loaded URDF with {len(self.joint_indices)} controllable joints")
+        
+        # IMMEDIATELY set joints to home position to prevent gravity-induced flopping
+        # This must happen before any physics steps to hold the arm in place
+        home_position = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        for i, joint_idx in enumerate(self.joint_indices):
+            p.setJointMotorControl2(
+                self.robot_id,
+                joint_idx,
+                p.POSITION_CONTROL,
+                targetPosition=home_position[i],
+                force=500,
+                positionGain=0.3,
+                velocityGain=0.1
+            )
+        
+        # Run physics steps to stabilize (without rendering delay)
+        # This allows the PID controllers to engage and hold the joints
+        for _ in range(100):
+            p.stepSimulation()
+        
+        print("✅ Joints stabilized at home position")
     
     def _add_coordinate_frame(self):
         """Add world coordinate frame visualization"""
@@ -156,13 +183,13 @@ class PiperSimulation:
         p.addUserDebugText("Z", [0, 0, axis_length + 0.05], 
                           textColorRGB=[0, 0, 1], textSize=1.5)
     
-    def set_joint_positions(self, joint_angles, max_force=500):
+    def set_joint_positions(self, joint_angles, max_force=600):
         """
         Set joint positions with clamping to limits
         
         Args:
             joint_angles: List of 6 joint angles in radians
-            max_force: Maximum force to apply (default 500 for stiffer control)
+            max_force: Maximum force to apply (default 600 for stiffer control)
         """
         if len(joint_angles) != 6:
             raise ValueError(f"Expected 6 joint angles, got {len(joint_angles)}")

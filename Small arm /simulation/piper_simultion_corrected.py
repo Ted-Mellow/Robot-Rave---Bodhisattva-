@@ -184,19 +184,32 @@ class PiperSimulation:
         p.addUserDebugText("Z", [0, 0, axis_length + 0.05], 
                           textColorRGB=[0, 0, 1], textSize=1.5)
     
-    def set_joint_positions(self, joint_angles, max_force=600):
+    def set_joint_positions(self, joint_angles, max_force=None):
         """
         Set joint positions with clamping to limits
         
         Args:
             joint_angles: List of 6 joint angles in radians
-            max_force: Maximum force to apply (default 600 for stiffer control)
+            max_force: Maximum force to apply (None = use per-joint defaults)
         """
         if not p.isConnected(self.client):
             raise RuntimeError("GUI window was closed - simulation disconnected")
         
         if len(joint_angles) != 6:
             raise ValueError(f"Expected 6 joint angles, got {len(joint_angles)}")
+        
+        # Per-joint force settings (J2 and J3 need MASSIVE force to lift against gravity)
+        if max_force is None:
+            joint_forces = [
+                2000,  # J1: Base rotation (high load when arm extended)
+                8000,  # J2: Shoulder (EXTREME - must lift entire arm vertically!)
+                6000,  # J3: Elbow (VERY HIGH - extends forearm weight)
+                1000,  # J4: Wrist roll (moderate load)
+                1000,  # J5: Wrist pitch (moderate load)
+                800    # J6: Wrist rotate (low load)
+            ]
+        else:
+            joint_forces = [max_force] * 6
         
         # Clamp to limits
         clamped_angles = []
@@ -208,16 +221,24 @@ class PiperSimulation:
             )
             clamped_angles.append(clamped)
         
-        # Set position control with higher gain and damping to prevent flopping
+        # Set position control with per-joint force and tuned gains
         for i, joint_idx in enumerate(self.joint_indices):
+            # VERY high gains for J2 and J3 to overcome gravity and reach targets
+            if i in [1, 2]:  # J2 (shoulder) and J3 (elbow)
+                pos_gain = 1.0  # Maximum stiffness
+                vel_gain = 0.5  # High damping
+            else:
+                pos_gain = 0.5
+                vel_gain = 0.2
+            
             p.setJointMotorControl2(
                 self.robot_id,
                 joint_idx,
                 p.POSITION_CONTROL,
                 targetPosition=clamped_angles[i],
-                force=max_force,
-                positionGain=0.3,  # Position gain for stiffer control
-                velocityGain=0.1   # Velocity damping to reduce oscillations
+                force=joint_forces[i],
+                positionGain=pos_gain,
+                velocityGain=vel_gain
             )
     
     def get_joint_positions(self):

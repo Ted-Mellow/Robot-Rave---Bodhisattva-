@@ -8,50 +8,109 @@ source venv/bin/activate
 
 ## 🎮 Run Simulations
 
-**CSV Trajectories (Recommended):**
+**Single command to run any CSV choreography:**
 ```bash
+python simulation/run_csv_trajectory.py csv_trajectories/YOUR_FILE.csv
+```
+
+**Examples:**
+```bash
+# Run a single trajectory
 python simulation/run_csv_trajectory.py csv_trajectories/example_wave.csv
-python simulation/run_csv_trajectory.py csv_trajectories/example_dance.csv --loop
-python simulation/run_csv_trajectory.py csv_trajectories/example_wave.csv --loop --speed 0.5
+
+# Loop continuously
+python simulation/run_csv_trajectory.py csv_trajectories/armwave.csv --loop
+
+# Slow motion (0.5x speed)
+python simulation/run_csv_trajectory.py csv_trajectories/movement_testing.csv --speed 0.5
+
+# Combined: Loop at half speed
+python simulation/run_csv_trajectory.py csv_trajectories/example_dance.csv --loop --speed 0.5
 ```
-All commands use the full Piper URDF model by default (with gripper).
 
-**Python Simulations:**
-```bash
-python simulation/sim_circle_demo.py            # Smooth circular motion demo
-python simulation/sim_custom_trajectory.py      # Interactive CSV selector
-python simulation/piper_simultion_corrected.py  # Full demo with gripper
-```
+**Features:**
+- ✅ Full Piper URDF model with gripper (loaded automatically)
+- ✅ No initial flopping - gravity compensation on startup  
+- ✅ Graceful exit on GUI window close or Ctrl+C
+- ✅ Real-time physics with PyBullet
+- ✅ Joint angle validation and clamping
 
-**Stop:** `Ctrl+C` or close GUI window
+**Stop Simulation:**
+- Press `Ctrl+C` in terminal, OR
+- Close the PyBullet GUI window
+- Both methods exit cleanly without errors
 
-## ✏️ Create Trajectories
+## ✏️ Create Your Own Choreography
 
-**CSV Format** (in `csv_trajectories/`):
+**CSV Format** (place in `csv_trajectories/` folder):
 ```csv
 time,joint1,joint2,joint3,joint4,joint5,joint6,description
-0.0,0.0,0.0,0.0,0.0,0.0,0.0,Home
-1.0,0.5,1.0,-1.0,0.5,0.5,0.5,Move
+0.0,0.0,0.0,0.0,0.0,0.0,0.0,Home position
+1.0,0.5,1.0,-1.0,0.5,0.5,0.5,Dance move
+2.0,0.0,0.0,0.0,0.0,0.0,0.0,Return home
 ```
 
-**Joint Limits (radians):** J1: ±2.62, J2: 0→3.14, J3: -2.97→0, J4: ±1.75, J5: ±1.22, J6: ±2.09
+**⚠️ IMPORTANT:** Joint angles must be in **radians** (not degrees!)
+
+**Joint Limits (radians):**
+- J1 (base): ±2.62 rad (±150°)
+- J2 (shoulder): 0 → 3.14 rad (0° → 180°)
+- J3 (elbow): -2.97 → 0 rad (-170° → 0°)
+- J4 (wrist roll): ±1.75 rad (±100°)
+- J5 (wrist pitch): ±1.22 rad (±70°)
+- J6 (wrist rotate): ±2.09 rad (±120°)
 
 ## 📁 Structure
 ```
 Small arm/
-├── piper_pybullet_sim.py       # Compatibility wrapper
 ├── simulation/
-│   ├── run_csv_trajectory.py   # CSV runner
-│   ├── sim_circle_demo.py      # Circular motion demo
-│   ├── sim_custom_trajectory.py
-│   └── piper_simultion_corrected.py
-├── csv_trajectories/           # Your CSV files here
+│   ├── piper_simultion_corrected.py  # Main simulation class
+│   └── run_csv_trajectory.py         # CSV runner (use this!)
+├── csv_trajectories/                 # Put your CSV choreography files here
+│   ├── example_wave.csv
+│   ├── example_dance.csv
+│   ├── armwave.csv
+│   └── movement_testing.csv
 ├── robot_models/
-│   └── piper.urdf              # Robot model (with gripper)
-└── piper_sdk/                  # Real robot SDK
+│   └── piper.urdf                    # 6-axis robot model (with gripper)
+├── piper_sdk/                        # Real robot SDK (for hardware)
+└── ROBOT_INITIALIZATION.md           # Gravity compensation documentation
 ```
 
 ## 🤖 Real Robot
-```bash
-python piper_sdk/piper_sdk/demo/V2/piper_ctrl_joint.py
+
+**IMPORTANT:** Real robot requires motor enable before commands:
+```python
+from piper_sdk import *
+
+piper = C_PiperInterface_V2("can0")
+piper.ConnectPort()
+
+# Wait for motors to engage (prevents flopping)
+while not piper.EnablePiper():
+    time.sleep(0.01)
+
+# Now safe to send commands
+piper.JointCtrl(0, 0, 0, 0, 0, 0)
 ```
+
+See `ROBOT_INITIALIZATION.md` for full documentation on gravity compensation.
+
+## 🔧 Troubleshooting
+
+**Simulation flops on startup?**
+- Should be fixed in latest version (gravity compensation active)
+- If still happening, check you're using `simulation/piper_simultion_corrected.py`
+
+**"Not connected to physics server" errors?**
+- Fixed in latest version
+- Close and restart simulation if persists
+
+**Robot moves incorrectly?**
+- Check CSV angles are in **radians** not degrees
+- Verify angles are within joint limits (see above)
+- Use `--speed 0.5` to slow down and observe
+
+**Need help?**
+- See `ROBOT_INITIALIZATION.md` for gravity compensation details
+- Check `csv_trajectories/README.md` for CSV format details

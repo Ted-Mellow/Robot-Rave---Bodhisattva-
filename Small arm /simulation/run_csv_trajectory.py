@@ -156,14 +156,18 @@ class CSVTrajectoryRunner:
                 self.sim.step()
                 
         except KeyboardInterrupt:
-            print("\n⚠️  Trajectory stopped by user")
+            print("\n⚠️  Trajectory stopped by user (Ctrl+C)")
         except RuntimeError as e:
-            if "disconnected" in str(e):
+            if "disconnected" in str(e).lower() or "closed" in str(e).lower():
                 print("\n⚠️  GUI window closed")
             else:
+                print(f"\n❌ Error: {e}")
                 raise
         finally:
-            self.sim.close()
+            try:
+                self.sim.close()
+            except Exception:
+                pass  # Already closed or disconnected
 
 
 def main():

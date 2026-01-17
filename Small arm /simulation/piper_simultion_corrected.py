@@ -191,6 +191,9 @@ class PiperSimulation:
             joint_angles: List of 6 joint angles in radians
             max_force: Maximum force to apply (default 600 for stiffer control)
         """
+        if not p.isConnected(self.client):
+            raise RuntimeError("GUI window was closed - simulation disconnected")
+        
         if len(joint_angles) != 6:
             raise ValueError(f"Expected 6 joint angles, got {len(joint_angles)}")
         
@@ -263,6 +266,8 @@ class PiperSimulation:
     
     def step(self):
         """Step the simulation forward"""
+        if not p.isConnected(self.client):
+            raise RuntimeError("GUI window was closed - simulation disconnected")
         p.stepSimulation()
         if self.gui:
             time.sleep(self.time_step)
@@ -298,9 +303,15 @@ class PiperSimulation:
         print("✅ Demo complete!")
     
     def close(self):
-        """Close the simulation"""
-        p.disconnect(self.client)
-        print("🔴 Simulation closed")
+        """Close the simulation safely"""
+        try:
+            if p.isConnected(self.client):
+                p.disconnect(self.client)
+                print("🔴 Simulation closed")
+            else:
+                print("ℹ️  Simulation already closed")
+        except Exception as e:
+            print(f"ℹ️  Simulation cleanup: {e}")
 
 
 def main():

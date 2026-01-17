@@ -39,7 +39,10 @@ class PiperSimulation:
         # Auto-detect URDF if not provided
         if urdf_path is None:
             script_dir = os.path.dirname(os.path.abspath(__file__))
+            parent_dir = os.path.dirname(script_dir)  # Go up one level from simulation/
             urdf_paths = [
+                os.path.join(parent_dir, "robot_models", "piper_corrected.urdf"),
+                os.path.join(parent_dir, "robot_models", "piper.urdf"),
                 os.path.join(script_dir, "robot_models", "piper_corrected.urdf"),
                 os.path.join(script_dir, "robot_models", "piper.urdf"),
                 os.path.join(script_dir, "piper.urdf"),
@@ -197,7 +200,9 @@ class PiperSimulation:
     def get_end_effector_pose(self):
         """Get end effector position and orientation"""
         # Get the end effector link state
-        ee_link_idx = -1  # Last link
+        # Use the last controllable joint (joint6) as end effector
+        # In PyBullet, link N is the child of joint N
+        ee_link_idx = self.joint_indices[-1]  # Last controllable joint
         link_state = p.getLinkState(self.robot_id, ee_link_idx)
         position = link_state[0]
         orientation = link_state[1]
@@ -277,7 +282,10 @@ def main():
     
     # Find URDF file (check robot_models/ first, then current directory)
     script_dir = os.path.dirname(os.path.abspath(__file__))
+    parent_dir = os.path.dirname(script_dir)  # Go up from simulation/
     urdf_paths = [
+        os.path.join(parent_dir, "robot_models", "piper.urdf"),
+        os.path.join(parent_dir, "robot_models", "piper_corrected.urdf"),
         os.path.join(script_dir, "robot_models", "piper.urdf"),
         os.path.join(script_dir, "robot_models", "piper_corrected.urdf"),
         os.path.join(script_dir, "piper.urdf"),

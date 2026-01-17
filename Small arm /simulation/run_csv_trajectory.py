@@ -45,8 +45,8 @@ class CSVTrajectoryRunner:
         self.waypoints = self.load_trajectory()
         print(f"✅ Loaded {len(self.waypoints)} waypoints from {self.csv_file.name}")
         
-        # Initialize simulation (URDF loaded by default in piper_simultion_corrected)
-        self.sim = PiperSimulation(gui=gui, use_urdf=use_urdf)
+        # Initialize simulation (URDF always loaded by piper_simultion_corrected)
+        self.sim = PiperSimulation(gui=gui)
     
     def load_trajectory(self):
         """Load trajectory from CSV file"""

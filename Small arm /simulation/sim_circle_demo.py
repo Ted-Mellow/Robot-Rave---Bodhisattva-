@@ -68,8 +68,8 @@ def main():
     print("to verify the URDF model loads and moves correctly.\n")
     print("Press Ctrl+C to stop, or close the GUI window\n")
     
-    # Initialize simulation with URDF
-    sim = PiperSimulation(gui=True, use_urdf=True)
+    # Initialize simulation (URDF loaded by default)
+    sim = PiperSimulation(gui=True)
     
     try:
         # Reset to home position

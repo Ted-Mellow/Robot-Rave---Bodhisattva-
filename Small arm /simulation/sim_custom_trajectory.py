@@ -87,7 +87,7 @@ def main():
     sim = PiperSimulation(gui=True)
     
     try:
-        sim.reset()
+        sim.reset_to_home()
         print("\n🔄 Executing trajectory...")
         time.sleep(0.5)
         

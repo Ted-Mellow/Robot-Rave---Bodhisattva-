@@ -105,7 +105,7 @@ class CSVTrajectoryRunner:
         
         try:
             # Reset to first position
-            self.sim.reset()
+            self.sim.reset_to_home()
             time.sleep(0.5)
             
             run_count = 0

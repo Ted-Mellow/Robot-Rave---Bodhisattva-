@@ -74,7 +74,7 @@ def main():
     try:
         # Reset to home position
         print("📍 Moving to home position...")
-        sim.reset()
+        sim.reset_to_home()
         time.sleep(1)
         
         # Generate circular trajectory

@@ -10,15 +10,15 @@ source venv/bin/activate
 
 **CSV Trajectories (Recommended):**
 ```bash
-python run_csv_trajectory.py csv_trajectories/example_wave.csv
-python run_csv_trajectory.py csv_trajectories/example_dance.csv --urdf
-python run_csv_trajectory.py csv_trajectories/example_wave.csv --loop --speed 0.5
+python simulation/run_csv_trajectory.py csv_trajectories/example_wave.csv
+python simulation/run_csv_trajectory.py csv_trajectories/example_dance.csv --urdf
+python simulation/run_csv_trajectory.py csv_trajectories/example_wave.csv --loop --speed 0.5
 ```
 
 **Python Simulations:**
 ```bash
-python simulation/sim_custom_trajectory.py  # Loads from CSV
-python piper_pybullet_sim.py                # Basic demo
+python simulation/sim_custom_trajectory.py      # Interactive CSV selector
+python simulation/piper_simultion_corrected.py  # Full demo with gripper
 ```
 
 **Stop:** `Ctrl+C` or close GUI window
@@ -37,10 +37,14 @@ time,joint1,joint2,joint3,joint4,joint5,joint6,description
 ## 📁 Structure
 ```
 Small arm/
-├── run_csv_trajectory.py      # CSV runner
+├── piper_pybullet_sim.py       # Compatibility wrapper
+├── simulation/
+│   ├── run_csv_trajectory.py   # CSV runner
+│   ├── sim_custom_trajectory.py
+│   └── piper_simultion_corrected.py
 ├── csv_trajectories/           # Your CSV files here
-├── robot_models/piper.urdf     # Robot model
-├── simulation/                 # Python examples
+├── robot_models/
+│   └── piper.urdf              # Robot model (with gripper)
 └── piper_sdk/                  # Real robot SDK
 ```
 

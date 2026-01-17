@@ -18,7 +18,7 @@ from pathlib import Path
 # Add current directory to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from piper_pybullet_sim import PiperSimulation
+from piper_simultion_corrected import PiperSimulation
 import pybullet as p
 
 
@@ -45,37 +45,8 @@ class CSVTrajectoryRunner:
         self.waypoints = self.load_trajectory()
         print(f"✅ Loaded {len(self.waypoints)} waypoints from {self.csv_file.name}")
         
-        # Initialize simulation
-        self.sim = PiperSimulation(gui=gui)
-        
-        # Load URDF if requested
-        if use_urdf:
-            # Look for URDF in parent directory's robot_models folder
-            urdf_path = Path(__file__).parent.parent / "robot_models" / "piper.urdf"
-            if urdf_path.exists():
-                print(f"✅ Loading URDF model: {urdf_path}")
-                # Remove the primitive robot
-                p.removeBody(self.sim.robot_id)
-                
-                # Load URDF
-                self.sim.robot_id = p.loadURDF(
-                    str(urdf_path),
-                    basePosition=[0, 0, 0],
-                    useFixedBase=True
-                )
-                
-                # Update joint indices for URDF
-                num_joints = p.getNumJoints(self.sim.robot_id)
-                self.sim.joint_indices = []
-                for i in range(num_joints):
-                    joint_info = p.getJointInfo(self.sim.robot_id, i)
-                    joint_name = joint_info[1].decode('utf-8')
-                    if 'joint' in joint_name and joint_name != 'ee_joint':
-                        self.sim.joint_indices.append(i)
-                
-                print(f"   URDF joints: {self.sim.joint_indices}")
-            else:
-                print(f"⚠️  URDF not found: {urdf_path}, using primitive shapes")
+        # Initialize simulation (URDF loaded by default in piper_simultion_corrected)
+        self.sim = PiperSimulation(gui=gui, use_urdf=use_urdf)
     
     def load_trajectory(self):
         """Load trajectory from CSV file"""

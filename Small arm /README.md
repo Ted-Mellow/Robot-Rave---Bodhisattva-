@@ -18,6 +18,7 @@ All commands use the full Piper URDF model by default (with gripper).
 
 **Python Simulations:**
 ```bash
+python simulation/sim_circle_demo.py            # Smooth circular motion demo
 python simulation/sim_custom_trajectory.py      # Interactive CSV selector
 python simulation/piper_simultion_corrected.py  # Full demo with gripper
 ```
@@ -41,6 +42,7 @@ Small arm/
 ├── piper_pybullet_sim.py       # Compatibility wrapper
 ├── simulation/
 │   ├── run_csv_trajectory.py   # CSV runner
+│   ├── sim_circle_demo.py      # Circular motion demo
 │   ├── sim_custom_trajectory.py
 │   └── piper_simultion_corrected.py
 ├── csv_trajectories/           # Your CSV files here

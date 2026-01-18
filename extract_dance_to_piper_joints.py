@@ -122,21 +122,24 @@ def calculate_base_rotation(shoulder, wrist, hip):
         J1 value in radians
     """
     # Project arm to horizontal plane (ignore Y/vertical)
-    arm_vec = np.array([wrist[0] - shoulder[0], wrist[2] - shoulder[2]])
+    # MediaPipe: x is left-right, z is depth
+    arm_vec_2d = np.array([wrist[0] - shoulder[0], wrist[2] - shoulder[2]])
     
-    # Calculate angle from forward direction
+    # Calculate angle from forward direction (positive X in MediaPipe = right)
     forward = np.array([1.0, 0.0])
     
-    if np.linalg.norm(arm_vec) < 1e-6:
+    if np.linalg.norm(arm_vec_2d) < 1e-6:
         return 0.0
     
-    arm_norm = arm_vec / np.linalg.norm(arm_vec)
+    arm_norm = arm_vec_2d / np.linalg.norm(arm_vec_2d)
     cos_angle = np.clip(np.dot(arm_norm, forward), -1.0, 1.0)
     angle = np.arccos(cos_angle)
     
-    # Determine left/right from cross product
-    cross = np.cross(forward, arm_norm)
-    if cross < 0:
+    # Determine left/right from cross product (3D for proper sign)
+    forward_3d = np.array([forward[0], 0.0, forward[1]])
+    arm_norm_3d = np.array([arm_norm[0], 0.0, arm_norm[1]])
+    cross_3d = np.cross(forward_3d, arm_norm_3d)
+    if cross_3d[1] < 0:  # Y component of cross product
         angle = -angle
     
     # Clamp to limits
@@ -267,24 +270,45 @@ class DanceToJointsExtractor:
         wrist_3d = [wrist.x, wrist.y, wrist.z]
         hip_3d = [hip.x, hip.y, hip.z]
         
-        # Calculate angles
-        # Shoulder angle: angle between vertical (hip->shoulder) and arm (shoulder->wrist)
-        vertical_vec = np.array([shoulder_3d[0] - hip_3d[0], 
-                                  shoulder_3d[1] - hip_3d[1], 
-                                  shoulder_3d[2] - hip_3d[2]])
+        # Calculate angles properly
+        # Shoulder angle: angle of arm relative to horizontal plane
+        # We want the angle from horizontal (0°) to vertical (90°)
         arm_vec = np.array([wrist_3d[0] - shoulder_3d[0],
                            wrist_3d[1] - shoulder_3d[1],
                            wrist_3d[2] - shoulder_3d[2]])
         
-        # Calculate shoulder angle from vertical
-        vertical_norm = vertical_vec / (np.linalg.norm(vertical_vec) + 1e-6)
-        arm_norm = arm_vec / (np.linalg.norm(arm_vec) + 1e-6)
-        cos_shoulder = np.clip(np.dot(vertical_norm, arm_norm), -1.0, 1.0)
-        shoulder_angle_deg = np.degrees(np.arccos(cos_shoulder))
+        arm_length = np.linalg.norm(arm_vec)
+        if arm_length < 1e-6:
+            return None
         
-        # Elbow angle
-        elbow_angle = calculate_angle_3d(shoulder_3d, elbow_3d, wrist_3d)
-        elbow_angle_deg = np.degrees(elbow_angle)
+        # Calculate elevation angle (angle from horizontal plane)
+        # Y is vertical in MediaPipe (0 = top, 1 = bottom, so we invert)
+        vertical_component = -arm_vec[1]  # Negative because Y increases downward
+        horizontal_component = np.sqrt(arm_vec[0]**2 + arm_vec[2]**2)
+        
+        if horizontal_component < 1e-6:
+            # Arm is straight up/down
+            shoulder_angle_deg = 90.0 if vertical_component > 0 else -90.0
+        else:
+            # Calculate angle from horizontal (0° = horizontal, 90° = up)
+            shoulder_angle_deg = np.degrees(np.arctan2(vertical_component, horizontal_component))
+            # Normalize to 0-180 range
+            if shoulder_angle_deg < 0:
+                shoulder_angle_deg = 180 + shoulder_angle_deg
+        
+        # Elbow angle: angle at elbow joint
+        upper_arm = np.array([elbow_3d[0] - shoulder_3d[0],
+                              elbow_3d[1] - shoulder_3d[1],
+                              elbow_3d[2] - shoulder_3d[2]])
+        forearm = np.array([wrist_3d[0] - elbow_3d[0],
+                           wrist_3d[1] - elbow_3d[1],
+                           wrist_3d[2] - elbow_3d[2]])
+        
+        upper_arm_norm = upper_arm / (np.linalg.norm(upper_arm) + 1e-6)
+        forearm_norm = forearm / (np.linalg.norm(forearm) + 1e-6)
+        
+        cos_elbow = np.clip(np.dot(upper_arm_norm, forearm_norm), -1.0, 1.0)
+        elbow_angle_deg = np.degrees(np.arccos(cos_elbow))
         
         # Convert to Piper joints
         j1 = calculate_base_rotation(shoulder_3d, wrist_3d, hip_3d)
@@ -305,7 +329,34 @@ class DanceToJointsExtractor:
             "joint6": round(j6, 4),
         }
     
-    def process_video(self, video_path, start_time=0.0, end_time=None, output_path=None):
+    def smooth_joint_angles(self, joint_angles, window_size=5):
+        """Apply moving average smoothing to reduce jerkiness."""
+        if len(joint_angles) < window_size:
+            return joint_angles
+        
+        smoothed = []
+        for i in range(len(joint_angles)):
+            # Get window of surrounding frames
+            start_idx = max(0, i - window_size // 2)
+            end_idx = min(len(joint_angles), i + window_size // 2 + 1)
+            window = joint_angles[start_idx:end_idx]
+            
+            # Average joint values in window
+            avg_joints = {
+                'frame_number': joint_angles[i]['frame_number'],
+                'timestamp': joint_angles[i]['timestamp'],
+                'joint1': float(np.mean([w['joint1'] for w in window])),
+                'joint2': float(np.mean([w['joint2'] for w in window])),
+                'joint3': float(np.mean([w['joint3'] for w in window])),
+                'joint4': float(np.mean([w['joint4'] for w in window])),
+                'joint5': float(np.mean([w['joint5'] for w in window])),
+                'joint6': float(np.mean([w['joint6'] for w in window])),
+            }
+            smoothed.append(avg_joints)
+        
+        return smoothed
+    
+    def process_video(self, video_path, start_time=0.0, end_time=None, output_path=None, downsample=2, smooth=True):
         """Process video and extract joint angles."""
         video_path = Path(video_path)
         if not video_path.exists():
@@ -329,6 +380,7 @@ class DanceToJointsExtractor:
         print(f"  Total frames: {total_frames}")
         print(f"  Duration: {duration:.2f} seconds")
         print(f"  Processing: {start_time:.2f}s to {end_time:.2f}s")
+        print(f"  Downsampling: Every {downsample} frames (reduces jerkiness)")
         
         start_frame = int(start_time * fps)
         end_frame = int(end_time * fps)
@@ -349,6 +401,11 @@ class DanceToJointsExtractor:
             ret, frame = cap.read()
             if not ret:
                 break
+            
+            # Downsample: only process every Nth frame
+            if (frame_number - start_frame) % downsample != 0:
+                frame_number += 1
+                continue
             
             timestamp = frame_number / fps
             joint_data = self.extract_joints_from_frame(frame, frame_number, timestamp)
@@ -371,13 +428,19 @@ class DanceToJointsExtractor:
             self.pose.close()
         
         print(f"\nExtraction complete:")
-        print(f"  Total frames: {frames_processed}")
+        print(f"  Total frames processed: {frames_processed}")
         print(f"  Frames with pose: {frames_with_pose}")
         print(f"  Detection rate: {frames_with_pose/frames_processed*100:.1f}%")
         
         if frames_with_pose == 0:
             print("\n⚠️  No poses detected!")
             return None
+        
+        # Apply smoothing to reduce jerkiness
+        if smooth and len(joint_angles) > 5:
+            print(f"  Applying smoothing...")
+            joint_angles = self.smooth_joint_angles(joint_angles, window_size=5)
+            print(f"  Smoothed to {len(joint_angles)} waypoints")
         
         # Write CSV
         if output_path is None:
@@ -397,14 +460,18 @@ class DanceToJointsExtractor:
         print(f"   Total waypoints: {len(joint_angles)}")
         print(f"\nTo run the dance:")
         print(f"  cd 'Small arm /simulation'")
-        # Calculate relative path from simulation directory
-        sim_dir = Path("Small arm /simulation")
+        # Calculate relative path from simulation directory to root
         csv_path = Path(output_path)
         if csv_path.is_absolute():
-            rel_path = csv_path
+            # If absolute, calculate relative from simulation dir
+            sim_dir = Path("Small arm /simulation").resolve()
+            try:
+                rel_path = csv_path.relative_to(sim_dir.parent.parent)
+            except:
+                rel_path = f"../../{csv_path.name}"
         else:
-            # Try to find relative path
-            rel_path = f"../../{output_path.name}"
+            # Relative path - from simulation dir, go up 2 levels
+            rel_path = f"../../{csv_path.name}"
         print(f"  python run_csv_trajectory.py {rel_path}")
         
         return output_path
@@ -413,14 +480,33 @@ class DanceToJointsExtractor:
 def main():
     parser = argparse.ArgumentParser(
         description="Extract dance movements from video and convert to Piper joint angles",
-        formatter_class=argparse.RawDescriptionHelpFormatter
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  # Extract entire video
+  python extract_dance_to_piper_joints.py video.mp4
+  
+  # Extract specific time range with smoothing
+  python extract_dance_to_piper_joints.py video.mp4 --start 10 --end 60 --downsample 3
+  
+  # Custom output with heavy smoothing
+  python extract_dance_to_piper_joints.py video.mp4 --output dance.csv --downsample 2
+        """
     )
     parser.add_argument("video_path", help="Path to input video file")
     parser.add_argument("--start", type=float, default=0.0, help="Start time in seconds")
     parser.add_argument("--end", type=float, default=None, help="End time in seconds")
     parser.add_argument("--output", help="Output CSV file path")
+    parser.add_argument("--downsample", type=int, default=2, 
+                       help="Process every Nth frame (default: 2, reduces jerkiness)")
+    parser.add_argument("--no-smooth", action="store_true",
+                       help="Disable smoothing (faster but more jerky)")
     
     args = parser.parse_args()
+    
+    if args.downsample < 1:
+        print("ERROR: Downsample must be >= 1")
+        return 1
     
     try:
         extractor = DanceToJointsExtractor()
@@ -428,7 +514,9 @@ def main():
             args.video_path,
             start_time=args.start,
             end_time=args.end,
-            output_path=args.output
+            output_path=args.output,
+            downsample=args.downsample,
+            smooth=not args.no_smooth
         )
     except Exception as e:
         print(f"ERROR: {e}")

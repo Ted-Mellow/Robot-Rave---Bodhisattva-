@@ -7,11 +7,21 @@
 ```bash
 cd "Small arm " && source venv/bin/activate
 
-# STEP 1: Extract trajectory from video (~60 sec, 90% detection rate)
+# STEP 1: Extract trajectory from video (~60 sec)
 python arm_control/dance_player.py Thousand-hand-video/Cropped_thousandhand.mp4 --preprocess --smooth 20
 # → Saves: Thousand-hand-video/Cropped_thousandhand_trajectory.json
-# --smooth 20 = smoothing window (higher = smoother robot, default 15)
-# If robot movements are too jerky, re-run with --smooth 25 or 30
+# → Uses improved CV: higher confidence, visibility filtering, outlier rejection
+# → Tracks ONE arm smoothly (right arm by default, use --arm left to change)
+# 
+# --smooth 20 = trajectory smoothing (higher = smoother robot)
+#   Try 15-30 depending on how smooth you want movements
+# 
+# IMPROVED CV FEATURES:
+#   ✓ Higher detection confidence (0.7 vs 0.3) = more stable tracking
+#   ✓ Visibility filtering = only uses visible landmarks
+#   ✓ Outlier detection = rejects impossible poses/jumps
+#   ✓ Exponential smoothing = reduces jitter in landmark positions
+#   ✓ Single-arm focus = consistent tracking of chosen arm
 
 # STEP 2a: Test - VIDEO with CV detection (stable, smooth playback)
 python arm_control/dance_player.py Thousand-hand-video/Cropped_thousandhand.mp4 \

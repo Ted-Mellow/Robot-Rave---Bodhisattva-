@@ -305,6 +305,15 @@ class DancePlayer:
         detection_rate = (poses_detected / self.state.total_frames * 100) if self.state.total_frames > 0 else 0
         self.log.info(f"Preprocessing complete: {len(self.trajectory)} trajectory frames")
         self.log.info(f"Detection rate: {detection_rate:.1f}%")
+        
+        # Show improved detector stats if available
+        if hasattr(self.pose_detector, 'get_stats'):
+            stats = self.pose_detector.get_stats()
+            self.log.info(f"Pose detector stats:")
+            self.log.info(f"  Frames processed: {stats['frames_processed']}")
+            self.log.info(f"  Valid detections: {stats['detections']}")
+            self.log.info(f"  Rejected (low visibility/outliers): {stats['rejections']}")
+            self.log.info(f"  Quality rate: {stats['detection_rate']:.1f}%")
 
         return len(self.trajectory) > 0
 
@@ -318,14 +327,27 @@ class DancePlayer:
             )
             sys.path.insert(0, thousand_hand_dir)
 
-            from pose_detector import PoseDetector
+            # Try to import improved detector first, fall back to original
+            try:
+                from improved_pose_detector import ImprovedPoseDetector
+                self.pose_detector = ImprovedPoseDetector(
+                    model_complexity=2,  # Higher for better accuracy
+                    min_detection_confidence=0.7,  # Higher for stability
+                    min_tracking_confidence=0.6,   # Higher for stability
+                    min_visibility=0.5,  # Require visible landmarks
+                    smoothing_alpha=0.3  # Smooth tracking
+                )
+                self.log.info("Using improved pose detector with enhanced tracking")
+            except ImportError:
+                from pose_detector import PoseDetector
+                self.pose_detector = PoseDetector(
+                    model_complexity=2,
+                    min_detection_confidence=0.7,  # Increased
+                    min_tracking_confidence=0.6    # Increased
+                )
+                self.log.info("Using standard pose detector")
+            
             from motion_mapper import MotionMapper
-
-            self.pose_detector = PoseDetector(
-                model_complexity=1,
-                min_detection_confidence=0.3,  # Lower for better detection
-                min_tracking_confidence=0.3
-            )
             self.motion_mapper = MotionMapper(
                 scaling_factor=0.8,
                 smooth_window=self.smooth_window
@@ -342,7 +364,12 @@ class DancePlayer:
     def _process_frame_for_trajectory(self, frame) -> Optional[List[float]]:
         """Process a single frame and return joint angles."""
         try:
-            result = self.pose_detector.process_frame(frame)
+            # Pass side parameter if using improved detector
+            if hasattr(self.pose_detector, 'min_visibility'):
+                result = self.pose_detector.process_frame(frame, side=self.arm_side)
+            else:
+                result = self.pose_detector.process_frame(frame)
+            
             if result is None:
                 return None
 

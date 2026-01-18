@@ -556,10 +556,10 @@ class DancePlayer:
                                     self._frame_queue.put(frame, block=False)
                                 except:
                                     pass  # Should not happen after clearing above
-                    else:
-                        # End of video
-                        self.log.info("Video playback complete")
-                        break
+                        else:
+                            # End of video
+                            self.log.info("Video playback complete")
+                            break
 
                 # Check if trajectory is complete
                 if trajectory_idx >= len(self.trajectory) and not video_started:

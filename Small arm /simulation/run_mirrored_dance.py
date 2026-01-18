@@ -222,7 +222,7 @@ class MirroredDanceRunner:
         print(f"\n{'='*60}")
         print(f"Running MIRRORED dance: {self.csv_file.name}")
         print(f"Speed factor: {speed_factor}x")
-        print(f"Loop: {'Yes' if loop else 'No'}")
+        print(f"Loop: {'Yes (continuous)' if loop else 'No (run once)'}")
         print(f"{'='*60}\n")
         
         try:
@@ -313,8 +313,8 @@ Examples:
     parser.add_argument("csv_file", help="Path to CSV trajectory file")
     parser.add_argument("--speed", type=float, default=1.0,
                        help="Speed multiplier (default: 1.0, 0.5 = half speed)")
-    parser.add_argument("--loop", action="store_true",
-                       help="Loop the dance continuously")
+    parser.add_argument("--no-loop", action="store_true",
+                       help="Don't loop - run once and stop (default: loops continuously)")
     parser.add_argument("--no-gui", action="store_true",
                        help="Run headless (no GUI)")
     
@@ -329,7 +329,9 @@ Examples:
             args.csv_file,
             gui=not args.no_gui
         )
-        runner.run(loop=args.loop, speed_factor=args.speed)
+        # Loop by default (unless --no-loop is specified)
+        should_loop = not args.no_loop
+        runner.run(loop=should_loop, speed_factor=args.speed)
     except Exception as e:
         print(f"ERROR: {e}")
         import traceback

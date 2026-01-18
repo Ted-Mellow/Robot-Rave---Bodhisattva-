@@ -22,3 +22,6 @@ uvicorn>=0.23.0
 
 # PyBullet for simulation (if not already installed)
 # pybullet>=3.2.0
+
+# Scipy for advanced smoothing and interpolation (optional but recommended)
+# scipy>=1.10.0

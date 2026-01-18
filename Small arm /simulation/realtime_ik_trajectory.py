@@ -85,13 +85,28 @@ def simulation_loop():
 
         # Apply IK to reach target position
         try:
+            # Check if simulation is still valid
+            if sim.robot_id is None:
+                print("⚠️  Robot disconnected")
+                running = False
+                break
+            
             sim.set_end_effector_position(current_target)
             sim.step()
         except RuntimeError as e:
-            if "disconnected" in str(e).lower() or "closed" in str(e).lower():
-                print("⚠️  GUI window closed")
+            error_msg = str(e).lower()
+            if "disconnected" in error_msg or "closed" in error_msg or "not connected" in error_msg:
+                print("⚠️  GUI window closed or physics server disconnected")
                 running = False
                 break
+            raise
+        except Exception as e:
+            error_msg = str(e).lower()
+            if "not connected" in error_msg or "disconnected" in error_msg:
+                print("⚠️  Physics server disconnected")
+                running = False
+                break
+            # Re-raise other exceptions
             raise
         except KeyboardInterrupt:
             running = False

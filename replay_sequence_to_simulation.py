@@ -67,7 +67,7 @@ class SequenceReplayer:
     
     def replay_sequence(self, sequence_data: Dict, speed_multiplier: float = 1.0, loop: bool = False):
         """
-        Replay a keypoint sequence.
+        Replay a keypoint sequence with smooth, natural timing.
         
         Args:
             sequence_data: Dictionary containing keypoints sequence
@@ -86,10 +86,19 @@ class SequenceReplayer:
         fps = sequence_data.get("fps", 30.0)
         duration = sequence_data.get("duration", len(keypoints) / fps)
         
+        # Check if sequence was already processed
+        processing_info = sequence_data.get("processing", {})
+        if processing_info:
+            print(f"  Note: This sequence was processed with:")
+            print(f"    - Speed: {processing_info.get('speed_multiplier', 1.0):.1f}x")
+            print(f"    - Smoothing: {processing_info.get('smoothing_factor', 0.0):.2f}")
+        
         print(f"\nReplaying sequence:")
         print(f"  Keypoints: {len(keypoints)}")
         print(f"  Duration: {duration:.2f} seconds")
-        print(f"  Speed: {speed_multiplier}x")
+        print(f"  Original FPS: {fps:.1f}")
+        print(f"  Playback Speed: {speed_multiplier}x")
+        print(f"  Effective FPS: {fps * speed_multiplier:.1f}")
         print(f"  Loop: {loop}")
         print("\nStarting replay... (Press Ctrl+C to stop)\n")
         
@@ -98,6 +107,7 @@ class SequenceReplayer:
         try:
             while True:
                 last_timestamp = None
+                start_time = time.time()
                 
                 for i, kp in enumerate(keypoints):
                     if not self.connected:
@@ -107,7 +117,7 @@ class SequenceReplayer:
                     current_timestamp = kp.get("timestamp", i / fps)
                     
                     if last_timestamp is not None:
-                        # Wait based on actual time difference
+                        # Wait based on actual time difference, adjusted for speed
                         time_diff = (current_timestamp - last_timestamp) / speed_multiplier
                         if time_diff > 0:
                             time.sleep(time_diff)
@@ -122,23 +132,28 @@ class SequenceReplayer:
                     if x is not None and y is not None:
                         self.send_keypoint(x, y)
                         
-                        # Progress indicator
-                        if i % 30 == 0:
+                        # Progress indicator (less frequent for smoother output)
+                        if i % 50 == 0 or i == len(keypoints) - 1:
                             progress = (i / len(keypoints)) * 100
-                            print(f"  Progress: {progress:.1f}% ({i}/{len(keypoints)} keypoints)")
+                            elapsed = time.time() - start_time
+                            if elapsed > 0:
+                                rate = i / elapsed
+                                remaining = (len(keypoints) - i) / rate if rate > 0 else 0
+                                print(f"  Progress: {progress:.1f}% ({i}/{len(keypoints)}) | "
+                                      f"Elapsed: {elapsed:.1f}s | Remaining: {remaining:.1f}s")
                     
                     last_timestamp = current_timestamp
                 
                 if not loop:
                     break
                 
-                print("\nLooping sequence...\n")
+                print("\n🔄 Looping sequence...\n")
                 time.sleep(0.5)  # Brief pause between loops
                 
         except KeyboardInterrupt:
-            print("\n\nReplay stopped by user")
+            print("\n\n⏹️  Replay stopped by user")
         except Exception as e:
-            print(f"\nError during replay: {e}")
+            print(f"\n❌ Error during replay: {e}")
     
     def replay_from_file(self, json_path: Path, speed_multiplier: float = 1.0, loop: bool = False):
         """Load and replay sequence from JSON file."""

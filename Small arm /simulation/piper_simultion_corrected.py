@@ -221,6 +221,10 @@ class PiperSimulation:
             )
             clamped_angles.append(clamped)
         
+        # Check if physics server is still connected
+        if self.robot_id is None:
+            raise RuntimeError("Robot not initialized or physics server disconnected")
+        
         # Set position control with per-joint force and tuned gains
         for i, joint_idx in enumerate(self.joint_indices):
             # VERY high gains for J2 and J3 to overcome gravity and reach targets
@@ -231,15 +235,22 @@ class PiperSimulation:
                 pos_gain = 0.5
                 vel_gain = 0.2
             
-            p.setJointMotorControl2(
-                self.robot_id,
-                joint_idx,
-                p.POSITION_CONTROL,
-                targetPosition=clamped_angles[i],
-                force=joint_forces[i],
-                positionGain=pos_gain,
-                velocityGain=vel_gain
-            )
+            try:
+                p.setJointMotorControl2(
+                    self.robot_id,
+                    joint_idx,
+                    p.POSITION_CONTROL,
+                    targetPosition=clamped_angles[i],
+                    force=joint_forces[i],
+                    positionGain=pos_gain,
+                    velocityGain=vel_gain
+                )
+            except Exception as e:
+                # If physics server disconnected, set robot_id to None
+                if "not connected" in str(e).lower():
+                    self.robot_id = None
+                    raise RuntimeError("Physics server disconnected")
+                raise
     
     def get_joint_positions(self):
         """Get current joint positions"""

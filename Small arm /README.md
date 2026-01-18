@@ -11,14 +11,20 @@ cd "Small arm " && source venv/bin/activate
 python arm_control/dance_player.py Thousand-hand-video/Cropped_thousandhand.mp4 --preprocess
 # → Saves: Thousand-hand-video/Cropped_thousandhand_trajectory.json
 
-# STEP 2: Test - VIDEO WINDOW shows CV detection, robot moves in background
+# STEP 2a: Test - VIDEO ONLY (stable, no robot window)
 python arm_control/dance_player.py Thousand-hand-video/Cropped_thousandhand.mp4 \
     -t Thousand-hand-video/Cropped_thousandhand_trajectory.json --sim --auto-play
+# Shows: Video with CV detection overlays (robot simulates in background)
+
+# STEP 2b: Test - VIDEO + ROBOT SIDE-BY-SIDE (may crash on macOS, but shows both)
+python arm_control/dance_player.py Thousand-hand-video/Cropped_thousandhand.mp4 \
+    -t Thousand-hand-video/Cropped_thousandhand_trajectory.json --sim --auto-play --show-both
+# Shows: Video (left) + PyBullet robot (right) - develop exact movement mapping
 # Press Q to quit, SPACE to pause
 
-# STEP 2b: Adjust smoothing if movements are jerky (default: 15 frames)
+# STEP 2c: Adjust smoothing if movements are jerky (default: 15 frames)
 python arm_control/dance_player.py Thousand-hand-video/Cropped_thousandhand.mp4 \
-    -t Thousand-hand-video/Cropped_thousandhand_trajectory.json --sim --auto-play --smooth 25
+    -t Thousand-hand-video/Cropped_thousandhand_trajectory.json --sim --auto-play --show-both --smooth 25
 # Higher --smooth = smoother but more delay (try 10-30)
 
 # STEP 3: Send to Pi when happy (validates limits, then deploys)

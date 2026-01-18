@@ -728,6 +728,8 @@ def main():
                         help='Start playing immediately after loading')
     parser.add_argument('--smooth', '-s', type=int, default=15,
                         help='Smoothing window size (frames). Higher = smoother but more delay. (default: 15)')
+    parser.add_argument('--show-both', action='store_true',
+                        help='Show both video AND PyBullet windows (may be unstable on macOS)')
 
     args = parser.parse_args()
 
@@ -771,15 +773,21 @@ def main():
 
     # Initialize arm
     if args.sim or args.auto_play:
-        # Use headless mode (no PyBullet GUI) in auto-play to avoid OpenGL conflict with OpenCV
-        pybullet_gui = not args.auto_play
+        # Show PyBullet GUI if --show-both flag is set, otherwise headless for stability
+        pybullet_gui = args.show_both if args.auto_play else True
         player.initialize_arm(pybullet_gui=pybullet_gui)
 
     # Auto-play or run GUI
     if args.auto_play and player.trajectory:
         # Create OpenCV window BEFORE starting playback (required for thread safety)
         cv2.namedWindow('Dance Player', cv2.WINDOW_NORMAL)
-        cv2.resizeWindow('Dance Player', 1440, 1080)
+        # Resize to half width if showing both windows side-by-side
+        window_width = 720 if args.show_both else 1440
+        window_height = 540 if args.show_both else 1080
+        cv2.resizeWindow('Dance Player', window_width, window_height)
+        if args.show_both:
+            # Position on left side of screen
+            cv2.moveWindow('Dance Player', 0, 100)
         
         player.play()
         # Main thread handles OpenCV display (required on macOS)

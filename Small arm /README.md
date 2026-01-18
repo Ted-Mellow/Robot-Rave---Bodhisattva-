@@ -11,26 +11,42 @@ cd "Small arm " && source venv/bin/activate
 python arm_control/dance_player.py Thousand-hand-video/Cropped_thousandhand.mp4 --preprocess
 # → Saves: Thousand-hand-video/Cropped_thousandhand_trajectory.json
 
-# STEP 2a: Test - VIDEO ONLY (stable, no robot window)
+# STEP 2a: Test - VIDEO with CV detection (stable)
 python arm_control/dance_player.py Thousand-hand-video/Cropped_thousandhand.mp4 \
-    -t Thousand-hand-video/Cropped_thousandhand_trajectory.json --sim --auto-play
-# Shows: Video with CV detection overlays (robot simulates in background)
-
-# STEP 2b: Test - VIDEO + ROBOT SIDE-BY-SIDE (may crash on macOS, but shows both)
-python arm_control/dance_player.py Thousand-hand-video/Cropped_thousandhand.mp4 \
-    -t Thousand-hand-video/Cropped_thousandhand_trajectory.json --sim --auto-play --show-both
-# Shows: Video (left) + PyBullet robot (right) - develop exact movement mapping
+    -t Thousand-hand-video/Cropped_thousandhand_trajectory.json --sim --auto-play --smooth 20
+# Shows: Video with pose detection overlays (robot simulates in background)
 # Press Q to quit, SPACE to pause
 
-# STEP 2c: Adjust smoothing if movements are jerky (default: 15 frames)
+# STEP 2b: Test - View ROBOT ONLY (to see exact movements)
+python convert_json_to_csv.py Thousand-hand-video/Cropped_thousandhand_trajectory.json
+python simulation/run_csv_trajectory.py csv_trajectories/Cropped_thousandhand_trajectory.csv
+# Shows: PyBullet robot performing the extracted dance movements
+# Run this ALONGSIDE Step 2a (different terminal) to see both
+
+# STEP 2c: Adjust smoothing if movements jerky (try 10-30, default: 15)
 python arm_control/dance_player.py Thousand-hand-video/Cropped_thousandhand.mp4 \
-    -t Thousand-hand-video/Cropped_thousandhand_trajectory.json --sim --auto-play --show-both --smooth 25
-# Higher --smooth = smoother but more delay (try 10-30)
+    -t Thousand-hand-video/Cropped_thousandhand_trajectory.json --sim --auto-play --smooth 25
 
 # STEP 3: Send to Pi when happy (validates limits, then deploys)
 ./send_to_pi.sh Thousand-hand-video/Cropped_thousandhand_trajectory.json --play --speed 0.5
 # → Sends to: robot@172.20.10.12:~/piper_control/trajectories/
 ```
+
+## ⚠️ macOS Limitation: Video + Robot Windows
+
+**Problem:** Running `--show-both` crashes due to OpenCV/PyBullet OpenGL conflict on macOS.
+
+**Solution:** Run video and robot in **separate terminals**:
+```bash
+# Terminal 1: Video with CV detection
+python arm_control/dance_player.py Thousand-hand-video/Cropped_thousandhand.mp4 \
+    -t Thousand-hand-video/Cropped_thousandhand_trajectory.json --sim --auto-play
+
+# Terminal 2: Robot simulation (convert JSON → CSV first)
+python convert_json_to_csv.py Thousand-hand-video/Cropped_thousandhand_trajectory.json
+python simulation/run_csv_trajectory.py csv_trajectories/Cropped_thousandhand_trajectory.csv
+```
+Arrange windows side-by-side to observe the **isomorphism** between human pose and robot movements.
 
 ## Test CSV Movements (No Video)
 

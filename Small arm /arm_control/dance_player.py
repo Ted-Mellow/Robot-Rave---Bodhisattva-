@@ -483,6 +483,7 @@ class DancePlayer:
         trajectory_idx = 0
         video_started = False
         frame_time = 1.0 / self.video_fps
+        last_displayed_frame = -1
 
         try:
             while not self._stop_event.is_set():
@@ -525,28 +526,36 @@ class DancePlayer:
                     video_started = True
                     target_frame = int(video_time * self.video_fps)
 
-                    # Seek to frame if needed
+                    # Seek to frame if needed (only for large jumps to avoid jitter)
                     current_video_frame = int(self.video_cap.get(cv2.CAP_PROP_POS_FRAMES))
-                    if abs(target_frame - current_video_frame) > 2:
+                    if abs(target_frame - current_video_frame) > 5:
                         self.video_cap.set(cv2.CAP_PROP_POS_FRAMES, target_frame)
 
-                    # Read and display frame
-                    ret, frame = self.video_cap.read()
-                    if ret:
-                        self.state.current_frame = target_frame
+                    # Read and display frame (only if it's a new frame to avoid redundancy)
+                    if target_frame != last_displayed_frame:
+                        ret, frame = self.video_cap.read()
+                        if ret:
+                            self.state.current_frame = target_frame
+                            last_displayed_frame = target_frame
 
-                        # Add overlay
-                        frame = self._add_playback_overlay(frame, elapsed, trajectory_idx)
+                            # Add overlay
+                            frame = self._add_playback_overlay(frame, elapsed, trajectory_idx)
 
-                        # Call frame callback or put in queue for main thread
-                        if self._on_frame_callback:
-                            self._on_frame_callback(frame)
-                        else:
-                            # Put frame in queue for main thread to display
-                            try:
-                                self._frame_queue.put(frame, block=False)
-                            except:
-                                pass  # Queue full, skip frame
+                            # Call frame callback or put in queue for main thread
+                            if self._on_frame_callback:
+                                self._on_frame_callback(frame)
+                            else:
+                                # Put frame in queue for main thread to display
+                                # Clear old frames if queue is full to avoid lag
+                                if self._frame_queue.full():
+                                    try:
+                                        self._frame_queue.get_nowait()  # Remove oldest frame
+                                    except:
+                                        pass
+                                try:
+                                    self._frame_queue.put(frame, block=False)
+                                except:
+                                    pass  # Should not happen after clearing above
                     else:
                         # End of video
                         self.log.info("Video playback complete")
@@ -562,8 +571,9 @@ class DancePlayer:
                     self.log.info("Playback complete")
                     break
 
-                # Frame timing
-                time.sleep(frame_time * 0.5)
+                # Frame timing - sleep to maintain smooth playback without CPU spin
+                # Target: 60 updates/sec for smooth robot control + video display
+                time.sleep(0.016)  # ~60 fps update rate
 
         except Exception as e:
             self.log.error(f"Playback error: {e}")

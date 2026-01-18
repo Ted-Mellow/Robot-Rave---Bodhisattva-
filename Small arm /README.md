@@ -8,14 +8,17 @@
 cd "Small arm " && source venv/bin/activate
 
 # STEP 1: Extract trajectory from video (~60 sec, 90% detection rate)
-python arm_control/dance_player.py Thousand-hand-video/Cropped_thousandhand.mp4 --preprocess
+python arm_control/dance_player.py Thousand-hand-video/Cropped_thousandhand.mp4 --preprocess --smooth 20
 # → Saves: Thousand-hand-video/Cropped_thousandhand_trajectory.json
+# --smooth 20 = smoothing window (higher = smoother robot, default 15)
+# If robot movements are too jerky, re-run with --smooth 25 or 30
 
-# STEP 2a: Test - VIDEO with CV detection (stable)
+# STEP 2a: Test - VIDEO with CV detection (stable, smooth playback)
 python arm_control/dance_player.py Thousand-hand-video/Cropped_thousandhand.mp4 \
-    -t Thousand-hand-video/Cropped_thousandhand_trajectory.json --sim --auto-play --smooth 20
+    -t Thousand-hand-video/Cropped_thousandhand_trajectory.json --sim --auto-play
 # Shows: Video with pose detection overlays (robot simulates in background)
 # Press Q to quit, SPACE to pause
+# NOTE: Video playback is now smooth (60fps), robot moves in background
 
 # STEP 2b: Test - View ROBOT ONLY (to see exact movements)
 python convert_json_to_csv.py Thousand-hand-video/Cropped_thousandhand_trajectory.json
@@ -23,9 +26,11 @@ python simulation/run_csv_trajectory.py csv_trajectories/Cropped_thousandhand_tr
 # Shows: PyBullet robot performing the extracted dance movements
 # Run this ALONGSIDE Step 2a (different terminal) to see both
 
-# STEP 2c: Adjust smoothing if movements jerky (try 10-30, default: 15)
-python arm_control/dance_player.py Thousand-hand-video/Cropped_thousandhand.mp4 \
-    -t Thousand-hand-video/Cropped_thousandhand_trajectory.json --sim --auto-play --smooth 25
+# STEP 2c: If ROBOT movements are jerky, re-preprocess with higher smoothing
+# (This doesn't affect video playback, only trajectory generation)
+python arm_control/dance_player.py Thousand-hand-video/Cropped_thousandhand.mp4 --preprocess --smooth 30
+python convert_json_to_csv.py Thousand-hand-video/Cropped_thousandhand_trajectory.json
+# Then re-run Step 2a and 2b
 
 # STEP 3: Send to Pi when happy (validates limits, then deploys)
 ./send_to_pi.sh Thousand-hand-video/Cropped_thousandhand_trajectory.json --play --speed 0.5

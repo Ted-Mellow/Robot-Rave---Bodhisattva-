@@ -1,21 +1,25 @@
-# Python virtual environment
+# Python
 venv/
 __pycache__/
 *.pyc
 *.pyo
-*.pyd
 .Python
-*.so
-*.egg
 *.egg-info/
-dist/
-build/
+
+# Logs (keep structure, ignore contents)
+logs/*.log
+
+# Generated files
+*.json
+*_trajectory.json
+pose_data.json
+bodhisattva_dance.csv
 
 # IDE
 .vscode/
 .idea/
+.cursor/
 *.swp
-*.swo
 
 # OS
 .DS_Store

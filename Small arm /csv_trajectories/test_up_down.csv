@@ -1,9 +1,0 @@
-time,joint1,joint2,joint3,joint4,joint5,joint6,description
-0.0,0.0,0.0,0.0,0.0,0.0,0.0,Start - arm should hang down
-2.0,0.0,0.0,0.0,0.0,0.0,0.0,Hold down position
-3.0,0.0,1.57,0.0,0.0,0.0,0.0,Move to 90° - should be horizontal
-5.0,0.0,1.57,0.0,0.0,0.0,0.0,Hold horizontal
-6.0,0.0,3.14,0.0,0.0,0.0,0.0,Move to 180° - should point UP
-8.0,0.0,3.14,0.0,0.0,0.0,0.0,Hold UP position
-9.0,0.0,0.0,0.0,0.0,0.0,0.0,Return to down
-10.0,0.0,0.0,0.0,0.0,0.0,0.0,End

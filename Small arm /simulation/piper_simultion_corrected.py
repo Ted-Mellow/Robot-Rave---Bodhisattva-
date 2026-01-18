@@ -294,6 +294,13 @@ class PiperSimulation:
         if self.gui:
             time.sleep(self.time_step)
     
+    def is_connected(self):
+        """Check if PyBullet is still connected"""
+        try:
+            return p.isConnected(self.client)
+        except:
+            return False
+    
     def reset_to_home(self):
         """Reset robot to home position"""
         home_position = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]

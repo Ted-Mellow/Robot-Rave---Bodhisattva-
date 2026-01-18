@@ -138,6 +138,11 @@ class CSVTrajectoryRunner:
                             t
                         )
                         
+                        # Check if GUI still connected
+                        if not self.sim.is_connected():
+                            print("\n⚠️  GUI window closed - exiting gracefully")
+                            return
+                        
                         self.sim.set_joint_positions(interpolated)
                         self.sim.step()
                 
@@ -152,11 +157,19 @@ class CSVTrajectoryRunner:
             print("\nPress Ctrl+C to exit, or close the GUI window")
             
             # Keep simulation running
-            while True:
+            while self.sim.is_connected():
                 self.sim.step()
+                time.sleep(0.01)  # Small sleep to avoid CPU spin
+            
+            print("\n⚠️  GUI window closed - exiting gracefully")
                 
         except KeyboardInterrupt:
             print("\n⚠️  Trajectory stopped by user (Ctrl+C)")
+        except RuntimeError as e:
+            if "disconnected" in str(e).lower():
+                print("\n⚠️  GUI window closed - exiting gracefully")
+            else:
+                raise
         except RuntimeError as e:
             if "disconnected" in str(e).lower() or "closed" in str(e).lower():
                 print("\n⚠️  GUI window closed")

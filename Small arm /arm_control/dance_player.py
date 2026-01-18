@@ -347,11 +347,21 @@ class DancePlayer:
                 )
                 self.log.info("Using standard pose detector")
             
-            from motion_mapper import MotionMapper
-            self.motion_mapper = MotionMapper(
-                scaling_factor=0.8,
-                smooth_window=self.smooth_window
-            )
+            # Try expressive mapper first for better dance movements
+            try:
+                from expressive_motion_mapper import ExpressiveMotionMapper
+                self.motion_mapper = ExpressiveMotionMapper(
+                    scaling_factor=1.2,  # Amplify movements for dance
+                    smooth_window=self.smooth_window
+                )
+                self.log.info("Using expressive motion mapper for dynamic movements")
+            except ImportError:
+                from motion_mapper import MotionMapper
+                self.motion_mapper = MotionMapper(
+                    scaling_factor=0.8,
+                    smooth_window=self.smooth_window
+                )
+                self.log.info("Using standard motion mapper")
 
             self.log.info("Vision components initialized")
             return True

@@ -231,6 +231,9 @@ class PiperSimulation:
                 pos_gain = 0.5
                 vel_gain = 0.2
             
+            if not self.is_connected():
+                raise RuntimeError("GUI window was closed - simulation disconnected")
+                
             p.setJointMotorControl2(
                 self.robot_id,
                 joint_idx,

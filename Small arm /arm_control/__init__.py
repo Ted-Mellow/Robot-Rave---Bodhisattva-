@@ -17,7 +17,6 @@ from .hardware_controller import HardwareArmController
 from .simulation_controller import SimulationArmController
 from .remote_controller import RemoteArmController
 from .signal_bridge import SignalBridge, JointSignal
-from .can_setup import setup_can_interface, check_can_status
 from .logging_config import setup_logging, Loggers
 
 __all__ = [
@@ -30,8 +29,6 @@ __all__ = [
     'RemoteArmController',
     'SignalBridge',
     'JointSignal',
-    'setup_can_interface',
-    'check_can_status',
     'setup_logging',
     'Loggers',
 ]

@@ -74,7 +74,8 @@ class DancePlayer:
                  remote_host: Optional[str] = None,
                  remote_user: str = 'pi',
                  remote_password: Optional[str] = None,
-                 remote_key: Optional[str] = None):
+                 remote_key: Optional[str] = None,
+                 smooth_window: int = 15):
         """
         Initialize dance player.
 
@@ -88,6 +89,7 @@ class DancePlayer:
             remote_user: SSH username for remote connection
             remote_password: SSH password (optional if using key)
             remote_key: Path to SSH private key
+            smooth_window: Moving average window for trajectory smoothing (larger = smoother, default: 15)
         """
         self.log = Loggers.playback()
         self.log.info("=" * 60)
@@ -104,6 +106,7 @@ class DancePlayer:
         self.remote_user = remote_user
         self.remote_password = remote_password
         self.remote_key = remote_key
+        self.smooth_window = smooth_window
 
         self.log.info(f"Video delay: {video_delay}s (arm leads video)")
         self.log.info(f"Tracking: {arm_side} arm")
@@ -137,14 +140,20 @@ class DancePlayer:
         self._on_frame_callback: Optional[Callable] = None
         self._on_state_change_callback: Optional[Callable] = None
 
-    def initialize_arm(self) -> bool:
-        """Initialize arm controller."""
+    def initialize_arm(self, pybullet_gui: bool = True) -> bool:
+        """
+        Initialize arm controller.
+        
+        Args:
+            pybullet_gui: Show PyBullet GUI window (set False for headless/video-only mode)
+        """
         self.log.info("Initializing arm controller...")
 
         try:
             if self.use_simulation:
-                self.log.info("Creating simulation controller...")
-                self.controller = ArmController.create_simulation(gui=True)
+                mode = "GUI" if pybullet_gui else "headless"
+                self.log.info(f"Creating simulation controller ({mode})...")
+                self.controller = ArmController.create_simulation(gui=pybullet_gui)
             elif self.remote_host:
                 self.log.info(f"Creating remote controller for {self.remote_host}...")
                 self.controller = ArmController.create_remote(
@@ -319,7 +328,7 @@ class DancePlayer:
             )
             self.motion_mapper = MotionMapper(
                 scaling_factor=0.8,
-                smooth_window=3  # More smoothing
+                smooth_window=self.smooth_window
             )
 
             self.log.info("Vision components initialized")
@@ -529,16 +538,15 @@ class DancePlayer:
                         # Add overlay
                         frame = self._add_playback_overlay(frame, elapsed, trajectory_idx)
 
-                        # Call frame callback or display directly
+                        # Call frame callback or put in queue for main thread
                         if self._on_frame_callback:
                             self._on_frame_callback(frame)
                         else:
-                            cv2.imshow('Dance Player', frame)
-                            key = cv2.waitKey(1) & 0xFF
-                            if key == ord('q'):
-                                self._stop_event.set()
-                            elif key == ord(' '):
-                                self.pause()
+                            # Put frame in queue for main thread to display
+                            try:
+                                self._frame_queue.put(frame, block=False)
+                            except:
+                                pass  # Queue full, skip frame
                     else:
                         # End of video
                         self.log.info("Video playback complete")
@@ -718,6 +726,8 @@ def main():
                         help='Load pre-saved trajectory file')
     parser.add_argument('--auto-play', action='store_true',
                         help='Start playing immediately after loading')
+    parser.add_argument('--smooth', '-s', type=int, default=15,
+                        help='Smoothing window size (frames). Higher = smoother but more delay. (default: 15)')
 
     args = parser.parse_args()
 
@@ -734,7 +744,8 @@ def main():
         remote_host=args.remote,
         remote_user=args.user,
         remote_password=args.password,
-        remote_key=args.key
+        remote_key=args.key,
+        smooth_window=args.smooth
     )
 
     # Load video if provided
@@ -760,17 +771,49 @@ def main():
 
     # Initialize arm
     if args.sim or args.auto_play:
-        player.initialize_arm()
+        # Use headless mode (no PyBullet GUI) in auto-play to avoid OpenGL conflict with OpenCV
+        pybullet_gui = not args.auto_play
+        player.initialize_arm(pybullet_gui=pybullet_gui)
 
     # Auto-play or run GUI
     if args.auto_play and player.trajectory:
+        # Create OpenCV window BEFORE starting playback (required for thread safety)
+        cv2.namedWindow('Dance Player', cv2.WINDOW_NORMAL)
+        cv2.resizeWindow('Dance Player', 1440, 1080)
+        
         player.play()
-        # Wait for playback to complete
+        # Main thread handles OpenCV display (required on macOS)
         try:
+            frame_displayed = False
             while player.state.is_playing:
-                time.sleep(0.1)
+                try:
+                    # Get frame from playback thread
+                    frame = player._frame_queue.get(timeout=0.05)
+                    cv2.imshow('Dance Player', frame)
+                    frame_displayed = True
+                    
+                    # Handle key presses
+                    key = cv2.waitKey(1) & 0xFF
+                    if key == ord('q'):
+                        player.stop()
+                        break
+                    elif key == ord(' '):
+                        player.pause()
+                except Empty:
+                    # No frame available yet, keep window responsive
+                    if frame_displayed:
+                        cv2.waitKey(1)
+                    else:
+                        # Show loading message
+                        loading = np.zeros((200, 400, 3), dtype=np.uint8)
+                        cv2.putText(loading, "Starting playback...", (50, 100),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+                        cv2.imshow('Dance Player', loading)
+                        cv2.waitKey(10)
         except KeyboardInterrupt:
             player.stop()
+        finally:
+            cv2.destroyAllWindows()
     else:
         player.run_gui()
 

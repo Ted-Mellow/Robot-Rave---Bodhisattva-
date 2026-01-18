@@ -7,15 +7,23 @@
 ```bash
 cd "Small arm " && source venv/bin/activate
 
-# STEP 1: Extract trajectory from video (~60 sec)
+# STEP 1: Extract trajectory from video (~60 sec, 90% detection rate)
 python arm_control/dance_player.py Thousand-hand-video/Cropped_thousandhand.mp4 --preprocess
+# → Saves: Thousand-hand-video/Cropped_thousandhand_trajectory.json
 
-# STEP 2: Test in simulation (opens GUI, video plays alongside)
+# STEP 2: Test - VIDEO WINDOW shows CV detection, robot moves in background
 python arm_control/dance_player.py Thousand-hand-video/Cropped_thousandhand.mp4 \
     -t Thousand-hand-video/Cropped_thousandhand_trajectory.json --sim --auto-play
+# Press Q to quit, SPACE to pause
 
-# STEP 3: Send to Pi when happy (validates first)
+# STEP 2b: Adjust smoothing if movements are jerky (default: 15 frames)
+python arm_control/dance_player.py Thousand-hand-video/Cropped_thousandhand.mp4 \
+    -t Thousand-hand-video/Cropped_thousandhand_trajectory.json --sim --auto-play --smooth 25
+# Higher --smooth = smoother but more delay (try 10-30)
+
+# STEP 3: Send to Pi when happy (validates limits, then deploys)
 ./send_to_pi.sh Thousand-hand-video/Cropped_thousandhand_trajectory.json --play --speed 0.5
+# → Sends to: robot@172.20.10.12:~/piper_control/trajectories/
 ```
 
 ## Test CSV Movements (No Video)
@@ -44,12 +52,29 @@ sudo ip link set can0 type can bitrate 1000000 && sudo ip link set can0 up
 ls -lh arm_control/trajectory_player.py
 ```
 
+## Pi Package (What Gets Deployed)
+
+**On macOS (development):**
+- Trajectory files: `Thousand-hand-video/*.json` (generated from video)
+- Pi player script: `arm_control/trajectory_player.py`
+- Deployment script: `send_to_pi.sh`
+
+**On Pi (after deployment):**
+```
+~/piper_control/
+├── arm_control/trajectory_player.py   ← Player script
+├── trajectories/*.json                 ← Trajectory files (robot-specific)
+└── venv/                               ← Python environment
+```
+
+**To deploy:** `./send_to_pi.sh <file>.json` validates safety then copies to Pi
+
 ## Files
 
-- `arm_control/dance_player.py` - Main script (preprocess video, simulate, control)
-- `simulation/run_csv_trajectory.py` - Test CSV patterns
-- `send_to_pi.sh` - Validate & deploy to Pi
-- `validate_trajectory.py` - Safety checks (limits, velocities)
+- `arm_control/dance_player.py` - Main script (preprocess, simulate, test)
+- `simulation/run_csv_trajectory.py` - Test CSV choreography patterns
+- `send_to_pi.sh` - Validate & deploy trajectories to Pi
+- `validate_trajectory.py` - Safety checks (limits, velocities, accelerations)
 
 ## Joint Limits
 

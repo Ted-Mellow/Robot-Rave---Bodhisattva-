@@ -1,6 +1,5 @@
 import tkinter as tk
 import cv2
-import mediapipe as mp
 import numpy as np
 import time
 from collections import deque
@@ -12,6 +11,21 @@ from enum import Enum
 
 import websocket
 from dotenv import load_dotenv
+
+# Import MediaPipe with better error handling
+try:
+    import mediapipe as mp
+    # Verify MediaPipe has solutions attribute
+    if not hasattr(mp, 'solutions'):
+        raise ImportError(
+            "MediaPipe installation appears incomplete. "
+            "Please reinstall: pip install --upgrade mediapipe"
+        )
+except ImportError as e:
+    raise ImportError(
+        "MediaPipe is not installed. "
+        "Please install it: pip install mediapipe"
+    ) from e
 
 
 class CalibrationState(Enum):
@@ -88,22 +102,42 @@ class PoseCartesianApp:
         self.window.update()
 
         print("Initializing webcam...")
-        # Initialize webcam
-        self.cap = cv2.VideoCapture(1)
-        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-        print("Webcam initialized")
+        # Initialize webcam - try multiple camera indices
+        self.cap = None
+        for camera_idx in [0, 1, 2]:
+            cap = cv2.VideoCapture(camera_idx)
+            if cap.isOpened():
+                ret, _ = cap.read()
+                if ret:
+                    self.cap = cap
+                    self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+                    self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+                    print(f"Webcam initialized on camera {camera_idx}")
+                    break
+                else:
+                    cap.release()
+            else:
+                cap.release()
+        
+        if self.cap is None:
+            raise RuntimeError("Failed to initialize webcam. No camera found on indices 0, 1, or 2.")
 
         print("Initializing MediaPipe...")
-        # Initialize MediaPipe Pose
-        self.mp_pose = mp.solutions.pose
-        self.pose = self.mp_pose.Pose(
-            static_image_mode=False,
-            model_complexity=1,
-            min_detection_confidence=0.5,
-            min_tracking_confidence=0.5
-        )
-        print("MediaPipe initialized")
+        # Initialize MediaPipe Pose with better error handling
+        try:
+            self.mp_pose = mp.solutions.pose
+            self.pose = self.mp_pose.Pose(
+                static_image_mode=False,
+                model_complexity=1,
+                min_detection_confidence=0.5,
+                min_tracking_confidence=0.5
+            )
+            print("MediaPipe initialized")
+        except AttributeError as e:
+            raise ImportError(
+                "MediaPipe 'solutions' module not found. "
+                "Please install/upgrade mediapipe: pip install --upgrade mediapipe"
+            ) from e
 
         # FPS tracking
         self.prev_time = time.time()

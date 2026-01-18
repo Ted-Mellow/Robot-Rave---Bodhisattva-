@@ -41,17 +41,25 @@ ARM_REACH = 0.5
 def keypoint_to_sim_coords(kp_x, kp_y):
     """
     Convert shoulder-relative keypoint (x,y) normalized 0-1 to simulation (x,y,z)
+    
+    New coordinate mapping:
+    - kp_x: 0-1, where 0.5 = shoulder position, >0.5 = forward, <0.5 = backward
+    - kp_y: 0-1, where 0.5 = shoulder level, >0.5 = up, <0.5 = down
 
     Args:
-        kp_x: Normalized X (0-1), +x = forward from shoulder
-        kp_y: Normalized Y (0-1), +y = up from shoulder
+        kp_x: Normalized X (0-1), 0.5 = shoulder, >0.5 = forward, <0.5 = backward
+        kp_y: Normalized Y (0-1), 0.5 = shoulder level, >0.5 = up, <0.5 = down
 
     Returns:
         [sim_x, sim_y, sim_z] in meters, on XZ plane
     """
-    sim_x = SHOULDER_POS[0] + (kp_x * ARM_REACH)
+    # Convert from [0,1] centered at 0.5 to [-1,1] centered at 0
+    x_offset = (kp_x - 0.5) * 2.0  # Maps [0,1] -> [-1,1]
+    y_offset = (kp_y - 0.5) * 2.0  # Maps [0,1] -> [-1,1]
+    
+    sim_x = SHOULDER_POS[0] + (x_offset * ARM_REACH * 0.5)  # Forward/backward
     sim_y = 0.0  # Fixed Y to keep robot on XZ plane
-    sim_z = SHOULDER_POS[2] + (kp_y * ARM_REACH)
+    sim_z = SHOULDER_POS[2] + (y_offset * ARM_REACH * 0.5)  # Up/down
     return [sim_x, sim_y, sim_z]
 
 

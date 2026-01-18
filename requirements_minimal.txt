@@ -1,0 +1,24 @@
+# Minimal requirements for pose-to-robot pipeline
+# Core dependencies only
+
+# MediaPipe for pose detection
+mediapipe>=0.10.30
+
+# OpenCV for webcam and image processing
+opencv-contrib-python>=4.11.0
+
+# NumPy (required by OpenCV and MediaPipe)
+numpy>=1.26.4,<2.0
+
+# WebSocket client for communication
+websocket-client>=1.9.0
+
+# Environment variables
+python-dotenv>=1.2.1
+
+# FastAPI and uvicorn for the simulation server
+fastapi>=0.100.0
+uvicorn>=0.23.0
+
+# PyBullet for simulation (if not already installed)
+# pybullet>=3.2.0
